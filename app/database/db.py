@@ -28,6 +28,15 @@ except Exception as e:
 
 sessionLocal = sessionmaker(bind = engine)
 
+def get_db():
+    db = sessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+
 Base = declarative_base()
 
 

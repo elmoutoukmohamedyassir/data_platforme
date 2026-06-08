@@ -3,7 +3,7 @@ from datetime import datetime
 class UserCreate(BaseModel):
     name: str
     email: str
-    hashed_password: str
+    password: str   # <-- plain password from user
 
 class UserResponse(BaseModel):
     id: int
