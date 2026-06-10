@@ -11,3 +11,4 @@ app.include_router(user_router)
 
 
 Base.metadata.create_all(bind=engine)
+
