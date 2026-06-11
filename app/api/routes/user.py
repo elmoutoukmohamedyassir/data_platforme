@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database.db import get_db
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse, UserLogin
-from app.core.security import hash_password, verify_password
+from app.core.security import hash_password, verify_password, create_access_token
 
 router = APIRouter()
 
@@ -30,12 +30,33 @@ def create_user(new_user: UserCreate, db: Session = Depends(get_db)):
     return user
 
 @router.post("/login")
-def login(user_login:UserLogin,db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.email == user_login.email).first()
-    if not db_user : 
-        raise HTTPException(statue_code = 404, detail ="User not found")
-    if not verify_password(user_login.password, db_user.hashed_password):
-        raise HTTPException(status_code=401, detail="Incorrect password")
+def login(user_login: UserLogin, db: Session = Depends(get_db)):
 
-    return {"message": "Login successful"}
+    # 1. find user in DB
+    user = db.query(User).filter(User.email == user_login.email).first()
+
+    # 2. check if user exists
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
+
+    # 3. verify password
+    if not verify_password(user_login.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
+
+    # 4. create token
+    token = create_access_token(
+        data={"sub": str(user.id)}  # user id inside token
+    )
+
+    # 5. return token
+    return {
+        "access_token": token,
+        "token_type": "bearer"
+    }
 
